@@ -24,17 +24,12 @@ onMounted(() => {
   store.fetchFlashcards();
 });
 
-// Recharger les flashcards quand on change de page
-watch(
-  () => [store.currentPage, appConfig.environment],
-  () => {
-    store.fetchFlashcards();
-  },
-);
-
-// Recharger les flashcards quand on change de filtre
+// Recharger les flashcards quand la page, l'environnement ou les filtres changent
+// (un seul watcher évite le double appel quand un filtre réinitialise currentPage à 1)
 watch(
   () => [
+    store.currentPage,
+    appConfig.environment,
     store.filters.category,
     store.filters.level,
     store.filters.reportedOnly,

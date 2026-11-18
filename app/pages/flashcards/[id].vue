@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { onMounted, computed } from "vue";
+import { onMounted, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useFlashcardsStore } from "@/stores/flashcards";
+import { useAppConfigStore } from "@/stores/app-config";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,14 +11,18 @@ import { ArrowLeft, AlertTriangle } from "lucide-vue-next";
 const route = useRoute();
 const router = useRouter();
 const store = useFlashcardsStore();
+const appConfig = useAppConfigStore();
 
-const cardId = route.params.id as string;
-
-onMounted(() => {
-  if (cardId) {
-    store.fetchFlashcardById(cardId);
+const loadCard = () => {
+  const id = route.params.id as string;
+  if (id) {
+    store.fetchFlashcardById(id);
   }
-});
+};
+
+onMounted(loadCard);
+
+watch(() => [route.params.id, appConfig.environment], loadCard);
 
 const card = computed(() => store.currentFlashcard);
 

@@ -1,14 +1,18 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import tailwindcss from "@tailwindcss/vite";
+
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
   modules: [
-    "@pinia/nuxt", 
-    "shadcn-nuxt", 
-    "@nuxtjs/tailwindcss",
+    "@pinia/nuxt",
+    "shadcn-nuxt",
     "@nuxtjs/supabase",
-    "@nuxtjs/color-mode"
+    "@nuxtjs/color-mode",
   ],
+  vite: {
+    plugins: [tailwindcss()],
+  },
   css: ["~/assets/css/tailwind.css"],
   shadcn: {
     prefix: "",

@@ -151,21 +151,21 @@ export const useFlashcardsStore = defineStore('flashcards', {
         // 2. Filtrer par texte après récupération
         // 3. Paginer côté client sur les résultats filtrés
         const searchQuery = this.filters.searchQuery?.trim().toLowerCase()
-        const hasSearch = searchQuery && searchQuery.length > 0
+        const hasSearch = Boolean(searchQuery && searchQuery.length > 0)
         
-        let data: any[] = []
+        let mappedFlashcards: Flashcard[] = []
         let totalCount = 0
 
-        if (hasSearch) {
+        if (hasSearch && searchQuery) {
           // Si recherche active, charger TOUTES les données correspondant aux filtres
           // (sans limite de pagination) puis filtrer et paginer côté client
-          const { data: allData, error, count } = await query
+          const { data: allData, error } = await query
 
           if (error) throw error
 
           if (allData) {
-            // Mapper toutes les cartes
-            let mappedCards = allData.map(this.mapSupabaseToFlashcard)
+            // Mapper toutes les cartes une seule fois
+            let mappedCards = allData.map((row: any) => this.mapSupabaseToFlashcard(row))
             
             // Filtrer par recherche texte
             mappedCards = mappedCards.filter(card => 
@@ -182,9 +182,9 @@ export const useFlashcardsStore = defineStore('flashcards', {
             // Le total après filtrage
             totalCount = mappedCards.length
             
-            // Paginer côté client
+            // Paginer côté client (sans re-mapper !)
             const offset = (this.currentPage - 1) * CARDS_PER_PAGE
-            data = mappedCards.slice(offset, offset + CARDS_PER_PAGE)
+            mappedFlashcards = mappedCards.slice(offset, offset + CARDS_PER_PAGE)
           }
         } else {
           // Pas de recherche : pagination normale côté serveur
@@ -195,15 +195,13 @@ export const useFlashcardsStore = defineStore('flashcards', {
           if (error) throw error
 
           if (pageData) {
-            data = pageData
+            mappedFlashcards = pageData.map((row: any) => this.mapSupabaseToFlashcard(row))
             totalCount = count || 0
           }
         }
 
-        if (data) {
-          this.flashcards = data.map(this.mapSupabaseToFlashcard)
-          this.totalCount = totalCount
-        }
+        this.flashcards = mappedFlashcards
+        this.totalCount = totalCount
       } catch (e: any) {
         this.error = e.message || 'Erreur lors du chargement des cartes'
         console.error('Erreur Supabase:', e)
@@ -324,11 +322,12 @@ export const useFlashcardsStore = defineStore('flashcards', {
       let onyomiReadings = undefined
       let kunyomiReadings = undefined
 
-      // Extraction des données spécifiques à la catégorie
-      const vocabData = json.vocabulary_flashcards
-      const kanjiData = json.kanji_flashcards
-      const grammarData = json.grammar_flashcards
-      const kanaData = json.kana_flashcards
+      // Extraction des données spécifiques à la catégorie (gère objet ou tableau 1-élément PostgREST)
+      const unwrap = (rel: any) => (Array.isArray(rel) ? rel[0] : rel)
+      const vocabData = unwrap(json.vocabulary_flashcards)
+      const kanjiData = unwrap(json.kanji_flashcards)
+      const grammarData = unwrap(json.grammar_flashcards)
+      const kanaData = unwrap(json.kana_flashcards)
 
       switch (category) {
         case 'vocabulary':
